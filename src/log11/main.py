@@ -2,7 +2,7 @@ import math
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, Union, Optional, Dict, Any
+from typing import Any, Literal
 
 from loguru import logger
 
@@ -10,7 +10,7 @@ DEFAULT_LOG_LEVEL: str = "INFO"
 STRING_MAX_LENGTH = 100
 
 DataFormatType = Literal["text", "json"]
-LevelType = Union[int, str]
+LevelType = int | str
 
 
 def find_project_root(start_path: Path) -> Path:
@@ -60,8 +60,7 @@ def to_string(value: Any, max_length: int = STRING_MAX_LENGTH) -> str:
 
         if hasattr(value, "__dict__") and value.__dict__:
             fields = ", ".join(
-                f"{key}={to_string(val)}"
-                for key, val in value.__dict__.items()
+                f"{key}={to_string(val)}" for key, val in value.__dict__.items()
             )
             text = f"{type(value).__name__}({fields})"
             return text[:max_length]
@@ -112,11 +111,11 @@ class LogStyle:
     @staticmethod
     def apply(
         value: str,
-        color: Optional[str] = None,
+        color: str | None = None,
         *,
         dim: bool = False,
         bold: bool = False,
-        width: Optional[int] = None,
+        width: int | None = None,
     ) -> str:
         text: str = value
 
@@ -265,8 +264,8 @@ class OutputConfig:
         data_format: DataFormatType,
         colored: bool,
         level: LevelType,
-        text_format: Optional[TextFormat],
-        kwargs: Dict[str, Any],
+        text_format: TextFormat | None,
+        kwargs: dict[str, Any],
     ) -> None:
         self.sink = sink
         self.data_format = data_format
@@ -306,8 +305,7 @@ class Log:
     @classmethod
     def _calculate_level_width(cls) -> None:
         cls._level_width = max(
-            len(level.name)
-            for level in logger._core.levels.values()
+            len(level.name) for level in logger._core.levels.values()
         )
 
     @classmethod
@@ -370,18 +368,14 @@ class Log:
         data_format: DataFormatType = "text",
         colored: bool = False,
         level: LevelType = DEFAULT_LOG_LEVEL,
-        text_format_config: Optional[TextFormatConfig] = None,
+        text_format_config: TextFormatConfig | None = None,
         **kwargs: Any,
     ) -> None:
         if name in cls._outputs:
-            raise ValueError(
-                f"Log output '{name}' already exists."
-            )
+            raise ValueError(f"Log output '{name}' already exists.")
 
         text_format = (
-            TextFormat(text_format_config)
-            if text_format_config is not None
-            else None
+            TextFormat(text_format_config) if text_format_config is not None else None
         )
 
         cls._outputs[name] = OutputConfig(
@@ -411,9 +405,7 @@ class Log:
     ) -> None:
         level_name = name.upper()
 
-        existing_levels = {
-            level.name for level in logger._core.levels.values()
-        }
+        existing_levels = {level.name for level in logger._core.levels.values()}
 
         if level_name not in existing_levels:
             logger.level(

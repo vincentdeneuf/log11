@@ -20,7 +20,7 @@ from .main import (
 
 __all__ = [
     "Log",
-    "LogColor", 
+    "LogColor",
     "LogStyle",
     "LogField",
     "TextFormatConfig",
