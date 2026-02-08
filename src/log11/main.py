@@ -3,11 +3,13 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Union, Optional, Dict, Any
+import json
 
 from loguru import logger
 
 DEFAULT_LOG_LEVEL: str = "INFO"
 STRING_MAX_LENGTH = 100
+_LOG11_MARKER = "_log11"
 
 DataFormatType = Literal["text", "json"]
 LevelType = Union[int, str]
@@ -29,32 +31,49 @@ def find_project_root(start_path: Path) -> Path:
 PROJECT_ROOT: Path = find_project_root(Path(__file__))
 
 
-def to_string(value: any, max_length: int = STRING_MAX_LENGTH) -> str:
-    """Safely convert any value to a truncated string suitable for logging."""
+def to_string(value: Any, max_length: int = STRING_MAX_LENGTH) -> str:
+    """Safely convert any value to a truncated, human-readable string."""
     if value is None:
-        return "<NULL>"
+        return "_NULL_"
 
     if value == "":
-        return "<EMPTY>"
+        return "_EMPTY_"
+
+    if isinstance(value, str):
+        return value[:max_length]
+
+    if isinstance(value, bool):
+        return str(value)
+
+    if isinstance(value, int):
+        return str(value)
 
     if isinstance(value, float):
         if math.isnan(value):
-            return "<NAN>"
+            return "_NAN_"
         if math.isinf(value):
-            return "<INFINITY>" if value > 0 else "<-INFINITY>"
+            return "_INFINITY_" if value > 0 else "_-INFINITY_"
+        return str(value)
 
     try:
         if hasattr(value, "model_dump") and callable(value.model_dump):
-            text = repr(value.model_dump())
-        elif hasattr(value, "dict") and callable(value.dict):
-            text = repr(value.dict())
-        else:
-            text = repr(value)
+            text = f"{type(value).__name__}({value.model_dump()})"
+            return text[:max_length]
+
+        if hasattr(value, "__dict__") and value.__dict__:
+            fields = ", ".join(
+                f"{key}={to_string(val)}"
+                for key, val in value.__dict__.items()
+            )
+            text = f"{type(value).__name__}({fields})"
+            return text[:max_length]
     except Exception:
-        try:
-            text = str(value)
-        except Exception:
-            text = f"<UNPRINTABLE {type(value).__name__}>"
+        pass
+
+    try:
+        text = str(value)
+    except Exception:
+        text = f"<UNPRINTABLE {type(value).__name__}>"
 
     if len(text) > max_length:
         text = text[: max_length - 3] + "..."
@@ -264,10 +283,32 @@ class Log:
 
     _level_width: int = 8
     _outputs: dict[str, OutputConfig] = {}
+    _patcher_installed: bool = False
 
-    # ------------------------------------------------------------------ #
-    # Internal helpers
-    # ------------------------------------------------------------------ #
+    @staticmethod
+    def _patch_record(record: dict[str, any]) -> None:
+        extra = record["extra"]
+
+        if not extra.get(_LOG11_MARKER):
+            return
+
+        for key, value in list(extra.items()):
+            if key == _LOG11_MARKER:
+                continue
+
+            text = to_string(value)
+            text = text.replace("{", "{{").replace("}", "}}")
+            extra[key] = text
+
+        extra.pop(_LOG11_MARKER, None)
+
+    @classmethod
+    def _ensure_patcher(cls) -> None:
+        if cls._patcher_installed:
+            return
+
+        logger.configure(patcher=cls._patch_record)
+        cls._patcher_installed = True
 
     @classmethod
     def _calculate_level_width(cls) -> None:
@@ -306,13 +347,10 @@ class Log:
         for config in cls._outputs.values():
             cls._build_output(config)
 
-    # ------------------------------------------------------------------ #
-    # Public API
-    # ------------------------------------------------------------------ #
-
     @classmethod
     def default_setup(cls):
         cls.clear()
+        cls._ensure_patcher()
 
         cls.add_output(
             name="default",
@@ -407,6 +445,6 @@ class Log:
 def get_logger():
     """Default public logger accessor."""
     if not Log._outputs:
-        return Log.default_setup()
+        Log.default_setup()
 
     return logger
