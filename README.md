@@ -1,6 +1,6 @@
 # log11
 
-A modern, flexible Python logging library designed for simplicity and power.
+A simple logging library built on top of loguru.
 
 ## Features
 
