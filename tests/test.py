@@ -11,6 +11,12 @@ from log11 import (
 )
 
 
+class DummyInfo:
+    def __init__(self, code: int, message: str):
+        self.code = code
+        self.message = message
+
+
 def test_default_logger():
     print("\n--- test_default_logger ---")
 
@@ -44,6 +50,27 @@ def test_extras_rendering():
     print("test_extras_rendering passed")
 
 
+def test_extras_complex_types():
+    print("\n--- test_extras_complex_types ---")
+
+    Log.clear()
+    logger = get_logger()
+
+    info = DummyInfo(500, "Boom")
+
+    logger.error(
+        "complex extras",
+        obj=info,
+        data={"x": 1, "y": 2},
+        items=[1, 2, 3],
+    )
+
+    # ✅ Test passes if no exception is raised
+    assert True
+
+    print("test_extras_complex_types passed")
+
+
 def test_file_output_text():
     print("\n--- test_file_output_text ---")
 
@@ -66,11 +93,17 @@ def test_file_output_text():
         )
 
         logger = get_logger()
+
+        info = DummyInfo(404, "Not Found")
+
         logger.info(
             "file message",
             value=42,
             empty="",
             nan_value=math.nan,
+            obj=info,
+            data={"key": "value"},
+            items=[10, 20],
         )
 
         content = log_file.read_text()
@@ -80,11 +113,15 @@ def test_file_output_text():
         assert "value=42" in content
         assert "empty=_EMPTY_" in content
         assert "nan_value=_NAN_" in content
+        assert "DummyInfo" in content
+        assert "data=" in content
+        assert "items=" in content
 
         # ✅ Release file handle before temp cleanup (Windows)
         Log.clear()
 
     print("test_file_output_text passed")
+
 
 def test_json_output():
     print("\n--- test_json_output ---")
@@ -101,11 +138,17 @@ def test_json_output():
         )
 
         logger = get_logger()
+
+        info = DummyInfo(401, "Unauthorized")
+
         logger.info(
             "json message",
             count=3,
             ok=True,
             nothing=None,
+            obj=info,
+            data={"x": 99},
+            items=[1, 2, 3],
         )
 
         # ✅ Close handlers so file is flushed and unlocked
@@ -122,8 +165,12 @@ def test_json_output():
         assert record["extra"]["count"] == "3"
         assert record["extra"]["ok"] == "True"
         assert record["extra"]["nothing"] == "_NULL_"
+        assert "DummyInfo" in record["extra"]["obj"]
+        assert "x" in record["extra"]["data"]
+        assert "1" in record["extra"]["items"]
 
     print("test_json_output passed")
+
 
 def test_custom_level():
     print("\n--- test_custom_level ---")
@@ -145,6 +192,7 @@ if __name__ == "__main__":
 
     test_default_logger()
     test_extras_rendering()
+    test_extras_complex_types()
     test_file_output_text()
     test_json_output()
     test_custom_level()

@@ -3,13 +3,11 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Union, Optional, Dict, Any
-import json
 
 from loguru import logger
 
 DEFAULT_LOG_LEVEL: str = "INFO"
 STRING_MAX_LENGTH = 100
-_LOG11_MARKER = "_log11"
 
 DataFormatType = Literal["text", "json"]
 LevelType = Union[int, str]
@@ -101,7 +99,7 @@ class LogColor:
     LEVEL: str = "level"
 
 
-LEVEL_TEMP: dict[str, any] = {
+LEVEL_TEMP: dict[str, Any] = {
     "name": "TEMP",
     "number": 25,
     "color": LogColor.MAGENTA,
@@ -141,21 +139,21 @@ class LogField:
     """Atomic log field renderers."""
 
     @staticmethod
-    def render_date(record: dict[str, any]) -> str:
+    def render_date(record: dict[str, Any]) -> str:
         return LogStyle.apply(
             record["time"].strftime("%Y-%m-%d"),
             dim=True,
         )
 
     @staticmethod
-    def render_time(record: dict[str, any]) -> str:
+    def render_time(record: dict[str, Any]) -> str:
         return LogStyle.apply(
             record["time"].strftime("%H:%M:%S"),
             dim=True,
         )
 
     @staticmethod
-    def render_level(record: dict[str, any]) -> str:
+    def render_level(record: dict[str, Any]) -> str:
         level_name: str = record["level"].name
 
         return LogStyle.apply(
@@ -166,7 +164,7 @@ class LogField:
         )
 
     @staticmethod
-    def render_location(record: dict[str, any]) -> str:
+    def render_location(record: dict[str, Any]) -> str:
         path: Path = Path(record["file"].path)
 
         try:
@@ -179,7 +177,7 @@ class LogField:
         return LogStyle.apply(location)
 
     @staticmethod
-    def render_function(record: dict[str, any]) -> str:
+    def render_function(record: dict[str, Any]) -> str:
         name: str = record["function"]
 
         if name == "<module>":
@@ -191,12 +189,12 @@ class LogField:
         return f"{name}()"
 
     @staticmethod
-    def render_message(record: dict[str, any]) -> str:
+    def render_message(record: dict[str, Any]) -> str:
         return LogStyle.apply(record["message"], bold=True)
 
     @staticmethod
-    def render_extras(record: dict[str, any]) -> str:
-        extras: dict[str, any] = record["extra"]
+    def render_extras(record: dict[str, Any]) -> str:
+        extras: dict[str, Any] = record["extra"]
 
         if not extras:
             return ""
@@ -228,7 +226,7 @@ class TextFormat:
     def __init__(self, config: TextFormatConfig) -> None:
         self.config = config
 
-    def render(self, record: dict[str, any]) -> str:
+    def render(self, record: dict[str, Any]) -> str:
         parts: list[str] = []
 
         if self.config.date:
@@ -263,7 +261,7 @@ class OutputConfig:
     def __init__(
         self,
         *,
-        sink: any,
+        sink: Any,
         data_format: DataFormatType,
         colored: bool,
         level: LevelType,
@@ -286,21 +284,16 @@ class Log:
     _patcher_installed: bool = False
 
     @staticmethod
-    def _patch_record(record: dict[str, any]) -> None:
+    def _patch_record(record: dict[str, Any]) -> None:
         extra = record["extra"]
 
-        if not extra.get(_LOG11_MARKER):
+        if not extra:
             return
 
         for key, value in list(extra.items()):
-            if key == _LOG11_MARKER:
-                continue
-
             text = to_string(value)
             text = text.replace("{", "{{").replace("}", "}}")
             extra[key] = text
-
-        extra.pop(_LOG11_MARKER, None)
 
     @classmethod
     def _ensure_patcher(cls) -> None:
@@ -433,7 +426,7 @@ class Log:
 
         if not hasattr(logger, method_name):
 
-            def log_method(message: str, **kwargs: any) -> None:
+            def log_method(message: str, **kwargs: Any) -> None:
                 logger.opt(depth=1).log(level_name, message, **kwargs)
 
             setattr(logger, method_name, log_method)
