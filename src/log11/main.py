@@ -237,14 +237,14 @@ class TextFormat:
         if self.config.level:
             parts.append(LogField.render_level(record))
 
-        if self.config.location:
-            parts.append(LogField.render_location(record))
-
         if self.config.function:
             parts.append(LogField.render_function(record))
 
         if self.config.message:
             parts.append(LogField.render_message(record))
+
+        if self.config.location:
+            parts.append(LogField.render_location(record))
 
         if self.config.extras:
             extras: str = LogField.render_extras(record)
