@@ -2,15 +2,6 @@
 
 A simple logging library built on top of loguru.
 
-## Features
-
-- **Modern API**: Built on top of the powerful loguru library
-- **Flexible Configuration**: Multiple output formats (text/JSON)
-- **Rich Formatting**: Colored output, custom fields, and structured logging
-- **Project Root Detection**: Automatic project root discovery
-- **Python 3.10+**: Modern Python features and type hints
-- **Zero Configuration**: Sensible defaults out of the box
-
 ## Installation
 
 ```bash
@@ -18,8 +9,6 @@ pip install log11
 ```
 
 ## Quick Start
-
-### Basic Usage
 
 ```python
 from log11 import get_logger
@@ -33,63 +22,99 @@ logger.warning("This is a warning")
 logger.error("Something went wrong")
 ```
 
-### Advanced Usage
+## Advanced Configuration
+
+### Different Output Formats and Sinks
 
 ```python
 from log11 import Log, TextFormatConfig
+import sys
 
-# Setup custom logging configuration
+# Clear any existing configuration
 Log.clear()
+
+# 1. JSON output to file
 Log.add_output(
-    name="console",
+    name="file_json",
     sink="logs/app.log",
     data_format="json",
+    level="INFO"
+)
+
+# 2. Plain text output to file
+Log.add_output(
+    name="file_text",
+    sink="logs/app.txt", 
+    data_format="text",
+    colored=False,
+    level="DEBUG"
+)
+
+# 3. Colored text output to console
+Log.add_output(
+    name="console_colored",
+    sink=sys.stdout,
+    data_format="text",
+    colored=True,
     level="INFO",
     text_format_config=TextFormatConfig(
-        date=True,
+        date=False,
         time=True,
         level=True,
-        location=False,
+        location=True,
         function=True,
         message=True,
         extras=True
     )
 )
 
-# Apply configuration and get logger
-logger = Log.apply()
+# Get logger with all outputs configured
+logger = get_logger()
 
-# Log structured data
-logger.info("User action", user_id=123, action="login")
+# Log messages - they'll appear in all configured outputs
+logger.info("User logged in", user_id=123, username="alice")
+logger.debug("Debug information", debug_data={"key": "value"})
 ```
 
-### Custom Formatting
+### Environment-Specific Configuration
 
 ```python
-from log11 import Log, TextFormatConfig, LogColor
+from log11 import Log, TextFormatConfig
+import sys
+import os
 
-# Setup with custom formatting
+# Clear any existing configuration
 Log.clear()
-Log.add_output(
-    name="console",
-    sink="stdout",
-    data_format="text",
-    colored=True,
-    level="DEBUG",
-    text_format_config=TextFormatConfig(
-        date=False,
-        time=True,
-        level=True,
-        location=True,
-        function=False,
-        message=True,
-        extras=True
-    )
-)
 
-logger = Log.apply()
-logger.debug("Debug message with details", debug_info="extra data")
-```
+if os.getenv("ENV") == "production":
+    # Production: JSON to file only
+    Log.add_output(
+        name="production",
+        sink="logs/production.log",
+        data_format="json",
+        level="INFO"
+    )
+else:
+    # Development: Colored text to console
+    Log.add_output(
+        name="development",
+        sink=sys.stdout,
+        data_format="text", 
+        colored=True,
+        level="DEBUG",
+        text_format_config=TextFormatConfig(
+            date=False,
+            time=True,
+            level=True,
+            location=True,
+            function=True,
+            message=True,
+            extras=True
+        )
+    )
+
+logger = get_logger()
+logger.info("Environment-specific logging")
 
 ## API Reference
 
@@ -99,8 +124,7 @@ The main logging configuration manager.
 
 - `Log.clear()`: Clear all output configurations
 - `Log.default_setup()`: Setup default console logging
-- `Log.apply()`: Apply all configured outputs and return logger
-- `Log.add_output(name, sink, data_format, colored, level, text_format_config, replace, auto_apply, **kwargs)`: Add a new output configuration
+- `Log.add_output(name, sink, data_format, colored, level, text_format_config, **kwargs)`: Add a new output configuration
 - `Log.add_level(name, number, color)`: Add a custom logging level
 - `Log.set_global_level(level)`: Set logging level for all outputs
 
@@ -115,73 +139,3 @@ The main logging configuration manager.
 - `LogColor`: Color constants for styling
 - `LogStyle`: Text styling helpers
 - `LogField`: Field rendering utilities
-
-## Development
-
-### Prerequisites
-
-Install [uv](https://docs.astral.sh/uv/) for modern Python dependency management:
-
-```bash
-# On Windows (PowerShell)
-irm https://astral.sh/uv/install.ps1 | iex
-
-# On macOS/Linux
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-### Installation for Development
-
-```bash
-# Clone the repository
-git clone https://github.com/vincentdeneuf/log11.git
-cd log11
-
-# Install dependencies and create virtual environment
-uv sync
-
-# Activate the virtual environment (optional, uv commands work without it)
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Install in development mode
-uv pip install -e .
-```
-
-### Running Tests
-
-```bash
-# Run tests with uv
-uv run pytest
-
-# Run tests with coverage
-uv run pytest --cov=log11 --cov-report=html
-```
-
-### Building the Package
-
-```bash
-# Build the package
-uv build
-
-# Build for distribution
-uv build --release
-```
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Changelog
-
-### 0.1.0
-- Initial release
-- Built on loguru for powerful logging capabilities
-- Flexible output configuration (text/JSON formats)
-- Rich formatting with colors and custom fields
-- Project root detection
-- Python 3.10+ support with modern type hints
-- Zero-configuration default setup
