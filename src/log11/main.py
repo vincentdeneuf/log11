@@ -333,6 +333,8 @@ class Log:
 
     @classmethod
     def _rebuild_outputs(cls) -> None:
+        cls._ensure_patcher()
+
         logger.remove()
 
         for config in cls._outputs.values():
@@ -341,7 +343,6 @@ class Log:
     @classmethod
     def default_setup(cls):
         cls.clear()
-        cls._ensure_patcher()
 
         cls.add_output(
             name="default",
