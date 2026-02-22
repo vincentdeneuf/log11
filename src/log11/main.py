@@ -173,7 +173,7 @@ class LogField:
 
         location: str = f"{path}:{record['line']}"
 
-        return LogStyle.apply(location)
+        return LogStyle.apply(location, dim=True)
 
     @staticmethod
     def render_function(record: dict[str, Any]) -> str:
@@ -243,13 +243,13 @@ class TextFormat:
         if self.config.message:
             parts.append(LogField.render_message(record))
 
-        if self.config.location:
-            parts.append(LogField.render_location(record))
-
         if self.config.extras:
             extras: str = LogField.render_extras(record)
             if extras:
                 parts.append(extras)
+
+        if self.config.location:
+            parts.append(LogField.render_location(record))
 
         return "  ".join(parts) + "\n"
 
